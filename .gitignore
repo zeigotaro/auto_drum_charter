@@ -1,0 +1,14 @@
+# Song folders ("Artist - Title/"), source audio (in/) and archives sit beside
+# the code but are not part of the repo: ignore every top-level directory
+# except the ones that hold code.
+/*/
+!/src/
+!/dev/
+!/examples/
+!/data/
+!/figs/
+*.7z
+
+__pycache__/
+*.pyc
+*.egg-info/
