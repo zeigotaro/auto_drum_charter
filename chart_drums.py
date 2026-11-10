@@ -11,9 +11,12 @@ Pipeline (all run on the SAME silence-padded audio so everything stays in sync):
            per-class thresholds: defaults, your own, or --auto-thresholds
       -> [optional] split ADTOF's merged cymbal class into ride/crash (DrumSep)
       -> beat tracking -> tempo map (handles non-click / wandering tempo)  (madmom | librosa)
-      -> map onsets to ticks + Clone Hero pro-drum frets
+      -> map onsets to ticks, snap to a 16th/triplet/32nd grid, limit to two
+         hands, assign Clone Hero pro-drum frets
       -> write notes.chart  ([Song] / [SyncTrack] / [Events] / [ExpertDrums])
-      -> [optional] fetch + syllabify lyrics as untimed placeholders   (ch_lyrics.py)
+      -> write song.ini + album.png from the input file's tags / cover art
+      -> [optional] fetch + syllabify lyrics, place each line at its LRCLIB
+         timestamp, draft section markers from the stanzas          (ch_lyrics.py)
 
 ADTOF class order is kick, snare, TOM, HIHAT, cymbal (from the package's
 LABELS_5 = [35, 38, 47, 42, 49]). Prefer NAMED thresholds to avoid order mix-ups:
@@ -22,7 +25,8 @@ LABELS_5 = [35, 38, 47, 42, 49]). Prefer NAMED thresholds to avoid order mix-ups
 What this deliberately does NOT do:
   - No velocity, accents, or ghost notes. Onsets become plain notes; you add
     dynamics by hand in Moonscraper at your discretion.
-  - No section markers. [Events] holds only lyrics (if --lyrics); sections are yours.
+  - No section markers without --lyrics (they are drafted from timed lyrics,
+    and are a starting point to rename and nudge, not a verdict).
   - No double-kick (32) inference. All kicks map to the single kick lane.
 
 Important design note: ADTOF is a "drums-in-the-presence-of-melodic-instruments"
@@ -42,6 +46,12 @@ Dependencies:
   - torch (CUDA auto-detected if present; CPU works, just slower)
 
 Usage:
+  python chart_drums.py song.flac --beat-backend madmom --lyrics
+
+Title, artist, album, year, genre and the output folder default to the input
+file's tags; --charter defaults to the CHART_CHARTER environment variable.
+Everything can still be given explicitly:
+
   python chart_drums.py song.wav -o "out/Artist - Title" \
       --title "Title" --artist "Artist" --year 2004 --charter "you" \
       --tempo-mode follow --time-sig 6/8
@@ -922,7 +932,7 @@ def extract_album_art(input_path, outdir):
 # --------------------------------------------------------------------------- #
 
 def main():
-    ap = argparse.ArgumentParser(description="wav -> Clone Hero pro-drum .chart")
+    ap = argparse.ArgumentParser(description="audio file -> Clone Hero pro-drum .chart")
     ap.add_argument("input_wav")
     ap.add_argument("-o", "--outdir", default=None,
                     help="target song folder (default: 'Artist - Title')")
@@ -961,7 +971,8 @@ def main():
     ap.add_argument("--ride-bias", type=float, default=1.0,
                     help="--split-cymbals: >1 favours ride, <1 favours crash")
     ap.add_argument("--lyrics", action="store_true",
-                    help="fetch lyrics (LRCLIB), syllabify, add as untimed placeholders")
+                    help="fetch lyrics (LRCLIB), syllabify, place each line at its timestamp "
+                         "(evenly spread if the source has none) and draft sections")
     ap.add_argument("--lyrics-file", default=None,
                     help="use this lyrics text instead of downloading (implies --lyrics)")
     ap.add_argument("--no-stem-ogg", action="store_true",

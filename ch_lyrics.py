@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
 ch_lyrics.py — fetch lyrics for a song, clean and syllabify them, and add them
-to a Clone Hero .chart (untimed placeholders, ready for Moonscraper's lyric editor).
+to a Clone Hero .chart, ready for Moonscraper's lyric editor. When the source has
+line timestamps (LRCLIB synced lyrics or an .lrc file) each phrase is placed at
+its real time and section markers are drafted; otherwise syllables are untimed
+placeholders.
 
 Works standalone on any existing chart (artist/title read from its [Song] block):
 
@@ -15,9 +18,11 @@ Outputs:
   lyrics.txt   one phrase per line, syllables joined by dashes ("Hel-lo dar-ling"),
                the paste format used by Moonscraper's lyric editor / Lyric Adder.
   notes.chart  [Events] gets phrase_start / "lyric <syl>" / phrase_end events,
-               merged with (never replacing) your sections. Syllables are spread
-               evenly across the drum-note span as PLACEHOLDERS — order is right,
-               timing is not; you time them in Moonscraper.
+               merged with (never replacing) your sections. With timestamps,
+               each phrase starts at its line time and syllables are spread
+               inside the line; without, syllables are spread evenly across the
+               drum-note span as PLACEHOLDERS. If the chart has no sections,
+               "section ..." events are drafted from the stanzas.
 
 Source: LRCLIB (lrclib.net) — free, no API key. Tries an exact-signature match
 (artist + title + duration) first, then falls back to search, preferring the
@@ -575,7 +580,8 @@ def add_lyrics(chart_path, artist=None, title=None, album=None, duration=None,
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Add untimed, syllabified lyrics to a .chart")
+    ap = argparse.ArgumentParser(description="Add syllabified lyrics (line-timed when the source has "
+                                             "timestamps) and draft sections to a .chart")
     ap.add_argument("chart", help="notes.chart or its song folder")
     ap.add_argument("--artist"); ap.add_argument("--title"); ap.add_argument("--album")
     ap.add_argument("--lyrics-file", help="use this text file instead of downloading")
